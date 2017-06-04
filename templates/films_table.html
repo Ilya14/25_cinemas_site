@@ -1,0 +1,39 @@
+      <table class="table table-hover">
+        {% for movie in movies %}
+        <tr>
+          {% if movie.film_img %}
+          <td><img class="film-img" src="{{ movie.film_img }}" alt="{{ movie.name }}"></td>
+          {% else %}
+          <td><img class="film-img" src="/static/img/film_140.png" alt="{{ movie.name }}"></td>
+          {% endif %}
+          <td>
+            <h3><a href="{{ movie.movie_afisha_url }}">{{ movie.name }}</a></h3>
+            <h4>
+                <span class="rateit" data-rateit-value="{{ movie.rating }}" data-rateit-ispreset="true" data-rateit-readonly="true" data-rateit-min="0" data-rateit-max="10"></span>
+                {{ movie.rating }} ({{ movie.rating_count }})
+            </h4>
+            <h4>Количество кинотеатров: {{movie.cinemas_count}}</h4>
+            <h4>О фильме</h4>
+            <p>
+              {{ movie.film_synopsys }}
+            </p>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <div class="row">
+        <div class="col-md-12" style="text-align:center;">
+          <ul class="pagination" style="text-align:center;">
+            {% for page_num in range(1, pages_count + 1) %}
+            {% if page_num == cur_page %}
+            <li class="active"><a href="#" onClick="setPage('/{{ page_num }}');">{{ page_num }}</a></li>
+            {% else %}
+            <li><a href="#" onClick="setPage('/{{ page_num }}');">{{ page_num }}</a></li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+
