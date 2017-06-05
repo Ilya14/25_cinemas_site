@@ -11,22 +11,21 @@ def fetch_afisha_page():
     return requests.get(afisha_url).text
 
 
-def parse_afisha_list(raw_html):
+def parse_afisha_list(raw_html, cinemas_limit):
     soup = BeautifulSoup(raw_html, 'lxml')
 
     movies_titles_tags = soup.find_all('div', {'class': 'm-disp-table'})
 
-    movies_titles_tags = movies_titles_tags[:7]
-
     afisha_movies_info = {}
     for movie_title_tag in movies_titles_tags:
-        movie_title = movie_title_tag.find('a').text
-        movie_afisha_url = movie_title_tag.find('a').attrs['href']
         cinemas_count = len(movie_title_tag.parent.find_all('td', {'class': 'b-td-item'}))
-        afisha_movies_info[movie_title] = {
-            'movie_afisha_url': movie_afisha_url,
-            'cinemas_count': cinemas_count
-        }
+        if cinemas_count >= cinemas_limit:
+            movie_title = movie_title_tag.find('a').text
+            movie_afisha_url = movie_title_tag.find('a').attrs['href']
+            afisha_movies_info[movie_title] = {
+                'movie_afisha_url': movie_afisha_url,
+                'cinemas_count': cinemas_count
+            }
 
     return afisha_movies_info
 
@@ -92,9 +91,9 @@ def parse_kinopoisk_movie_page(raw_html):
     return kinopoisk_movie_info
 
 
-def get_movies_info():
+def get_movies_info(cinemas_limit):
     afisha_page = fetch_afisha_page()
-    afisha_movies_info = parse_afisha_list(afisha_page)
+    afisha_movies_info = parse_afisha_list(afisha_page, cinemas_limit)
 
     proxies_list = get_proxies_list()
 

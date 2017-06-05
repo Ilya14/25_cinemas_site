@@ -1,6 +1,6 @@
 import logging
 import math
-from flask import Flask, render_template, request
+from flask import Flask, render_template, json
 from werkzeug.contrib.fixers import ProxyFix
 from flask_caching import Cache
 from cinemas import get_movies_info, sort_movies_list
@@ -16,8 +16,8 @@ CACHE_TIMEOUT = 43200
 
 
 @app.cache.cached(timeout=CACHE_TIMEOUT, key_prefix='movies')
-def get_movies():
-    return sort_movies_list(get_movies_info())
+def get_movies(movies_count=10, cinemas_limit=30):
+    return sort_movies_list(get_movies_info(cinemas_limit))[:movies_count]
 
 
 def get_page(page):
@@ -38,6 +38,16 @@ def films_list():
 def get_films_table(page):
     movies, pages_count = get_page(page)
     return render_template('films_table.html', movies=movies, cur_page=page, pages_count=pages_count)
+
+
+@app.route('/api')
+def api():
+    return json.dumps(get_movies(), indent=4, ensure_ascii=False)
+
+
+@app.route('/help/api')
+def api_help():
+    return render_template('api_help.html')
 
 
 if __name__ == "__main__":

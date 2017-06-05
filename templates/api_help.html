@@ -1,0 +1,66 @@
+{% extends "_base.html" %}
+
+{% block title %}API{% endblock %}
+{% block container %}
+      <div class="page-header">
+        <h1>API</h1>
+      </div>
+
+      <p>
+      Сервис &laquo;Что в кино&raquo; имеет API в формате JSON. API доступен
+      по адресу <a>https://whatatcinema.herokuapp.com/api</a>. Структура данных приведена ниже:
+      <pre>
+      [
+        {
+          'name': ...,
+          'rating': ...,
+          'rating_count': ...,
+          'cinemas_count': ...,
+          'film_synopsys': ...,
+          'film_img': ...,
+          'movie_afisha_url': ...
+        },
+        ...
+      </pre>
+      </p>
+
+      Описание предоставляемых данных приведено в таблице ниже.
+      <table class="table">
+        <thead>
+          <tr>
+            <th>JSON-параметр</th>
+            <th>Описание</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>name</td>
+            <td>Название фильма</td>
+          </tr>
+          <tr>
+            <td>rating</td>
+            <td>Рейтинг фильма по данным <a href="https://www.kinopoisk.ru/">Кинопоиск</a></td>
+          </tr>
+          <tr>
+            <td>rating_count</td>
+            <td>Количество оценок по данным <a href="https://www.kinopoisk.ru/">Кинопоиск</a></td>
+          </tr>
+          <tr>
+            <td>cinemas_count</td>
+            <td>Количество кинотеатров, в которых идет фильм, по данным <a href="https://www.afisha.ru">Афиша</a></td>
+          </tr>
+          <tr>
+            <td>film_synopsys</td>
+            <td>Описание фильма</td>
+          </tr>
+          <tr>
+            <td>film_img</td>
+            <td>Ссылка на постер к фильму</td>
+          </tr>
+          <tr>
+            <td>movie_afisha_url</td>
+            <td>Ссылка на страницу фильма на <a href="https://www.afisha.ru">Афиша</a></td>
+          </tr>
+        </tbody>
+      </table>
+{% endblock %}
