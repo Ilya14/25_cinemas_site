@@ -5,9 +5,9 @@
     <link rel="stylesheet" href="/static/rateit.js/scripts/rateit.css"/>
 {% endblock %}
 {% block before_load %}
-    <div id="before-load">
-      <i></i>
-    </div>
+<div id='before-load'>
+    <i></i>
+</div>
 {% endblock %}
 {% block home_active %}"active"{% endblock %}
 {% block container %}
@@ -20,20 +20,35 @@
 {% block script %}
     <script src="/static/rateit.js/scripts/jquery.rateit.min.js"></script>
     <script>
-    function setPage(pageUrl) {
-      $.ajax({
-        dataType: 'html',
-        url: pageUrl,
-        success: function(data) {
-          $('.js-films-table').html(data);
-          $('.rateit').rateit();
-          $('#before-load').find('i').fadeOut().end().delay(400).fadeOut('slow');
+    function getPage(pageUrl) {
+      $("#before-load").show();
+      $("#before-load").find("i").show();
+
+      var request = new XMLHttpRequest();
+      request.open("GET", pageUrl);
+
+      request.onreadystatechange = function() {
+        if (request.readyState === 4 && request.status === 202) {
+          setTimeout(
+           function() {
+             request.open("GET", pageUrl, true);
+             request.send(null);
+           },
+           5000
+          );
         }
-      });
+        else if (request.readyState === 4 && request.status === 200) {
+          $('.js-films-table').html(request.responseText);
+          $('.rateit').rateit();
+          $('#before-load').find('i').fadeOut().end().delay(400).fadeOut("slow");
+        }
+      };
+
+      request.send(null);
     }
 
     $(window).load(function() {
-      setPage('/1');
+      getPage('/1');
     });
     </script>
 {% endblock %}

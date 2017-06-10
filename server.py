@@ -2,26 +2,22 @@ import logging
 import math
 from flask import Flask, render_template, json
 from werkzeug.contrib.fixers import ProxyFix
-from flask_caching import Cache
+from rq import Queue
+from worker import conn
 from cinemas import get_movies_info, sort_movies_list
+
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
-app.cache = Cache(app, config={
-    'CACHE_TYPE': 'filesystem',
-    'CACHE_DIR': './cache'
-})
-
-CACHE_TIMEOUT = 43200
+queue = Queue(connection=conn)
 
 
-@app.cache.cached(timeout=CACHE_TIMEOUT, key_prefix='movies')
-def get_movies(movies_count=10, cinemas_limit=30):
-    return sort_movies_list(get_movies_info(cinemas_limit))[:movies_count]
+def start_job():
+    cinemas_limit = 30
+    queue.enqueue(get_movies_info, args=(cinemas_limit,), result_ttl=43200, timeout=600, job_id='get_films')
 
 
-def get_page(page):
-    movies = get_movies()
+def get_page(movies, page):
     films_on_page = 5
     pages_count = math.ceil(len(movies) / films_on_page)
     begin = (page - 1) * films_on_page
@@ -31,18 +27,40 @@ def get_page(page):
 
 @app.route('/')
 def films_list():
+    job = queue.fetch_job('get_films')
+    if job is None:
+        start_job()
     return render_template('films_list.html')
 
 
 @app.route('/<int:page>')
 def get_films_table(page):
-    movies, pages_count = get_page(page)
-    return render_template('films_table.html', movies=movies, cur_page=page, pages_count=pages_count)
+    job = queue.fetch_job('get_films')
+    if job is None:
+        start_job()
+        return 'Not ready', 202
+    elif job.is_finished:
+        movies_count = 10
+        movies = sort_movies_list(job.result)[:movies_count]
+        movies_page, pages_count = get_page(movies, page)
+        return render_template('films_table.html',
+                               movies=movies_page,
+                               cur_page=page,
+                               pages_count=pages_count)
+    else:
+        return 'Not ready', 202
 
 
 @app.route('/api')
 def api():
-    return json.dumps(get_movies(), indent=4, ensure_ascii=False)
+    job = queue.fetch_job('get_films')
+    if job is None:
+        start_job()
+        return 'Not ready', 202
+    elif job.is_finished:
+        return json.dumps(job.result, indent=4, ensure_ascii=False)
+    else:
+        return 'Not ready', 202
 
 
 @app.route('/help/api')

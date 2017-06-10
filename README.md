@@ -4,7 +4,8 @@
 
 The site allows to receive the list from 10 most popular movies going
 in cinemas at present. Data from the sites [Afisha](https://www.afisha.ru/) and [Kinopoisk](https://www.kinopoisk.ru/) 
-are used for this purpose. Data on movies are cached for 12 hours.
+are used for this purpose. Movies data remain for 12 hours.
+The first start of the site can take some time until information on movies is loaded.
 
 The site is available at the [address](https://whatatcinema.herokuapp.com/).
 
@@ -16,10 +17,19 @@ information on use of API is posted on the site in the section "Help".
 
 ## Start of the site
 
-For local start of the site execute:
+To start the site locally, the Redis database must be installed.
+For use of the site execute:
+
+* run worker process:
+```sh
+$ python3.5 ./worker.py
+```
+
+* run server process:
 ```sh
 $ python3.5 ./server.py
 ```
+
 The site will be available on http://127.0.0.1:5000/.
 
 # Project Goals

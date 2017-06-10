@@ -1,1 +1,2 @@
-web: gunicorn server:app --timeout 1800
+web: gunicorn server:app
+worker: python worker.py
