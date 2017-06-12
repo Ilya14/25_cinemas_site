@@ -2,20 +2,23 @@ import logging
 import math
 from flask import Flask, render_template, json
 from werkzeug.contrib.fixers import ProxyFix
-from flask_caching import Cache
+from werkzeug.contrib.cache import SimpleCache
 from cinemas import get_movies_info, sort_movies_list
 
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+cache = SimpleCache()
 TIMEOUT = 43200
 
 
-@cache.cached(timeout=TIMEOUT, key_prefix='get_movies')
 def get_movies(cinemas_limit=30, movies_count=10, threads_count=8):
-    movies_info = get_movies_info(cinemas_limit=cinemas_limit, threads_count=threads_count)
-    return sort_movies_list(movies_info)[:movies_count]
+    movies = cache.get('movies')
+    if movies is None:
+        movies_info = get_movies_info(cinemas_limit=cinemas_limit, threads_count=threads_count)
+        movies = sort_movies_list(movies_info)[:movies_count]
+        cache.set('movies', movies, timeout=TIMEOUT)
+    return movies
 
 
 def get_page(page):
