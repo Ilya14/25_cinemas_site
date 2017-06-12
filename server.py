@@ -2,22 +2,24 @@ import logging
 import math
 from flask import Flask, render_template, json
 from werkzeug.contrib.fixers import ProxyFix
-from rq import Queue
-from worker import conn
+from flask_caching import Cache
 from cinemas import get_movies_info, sort_movies_list
 
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
-queue = Queue(connection=conn)
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+TIMEOUT = 43200
 
 
-def start_job():
-    cinemas_limit = 30
-    queue.enqueue(get_movies_info, args=(cinemas_limit,), result_ttl=43200, timeout=600, job_id='get_films')
+@cache.cached(timeout=TIMEOUT, key_prefix='get_movies')
+def get_movies(cinemas_limit=30, movies_count=10, threads_count=8):
+    movies_info = get_movies_info(cinemas_limit=cinemas_limit, threads_count=threads_count)
+    return sort_movies_list(movies_info)[:movies_count]
 
 
-def get_page(movies, page):
+def get_page(page):
+    movies = get_movies()
     films_on_page = 5
     pages_count = math.ceil(len(movies) / films_on_page)
     begin = (page - 1) * films_on_page
@@ -27,40 +29,21 @@ def get_page(movies, page):
 
 @app.route('/')
 def films_list():
-    job = queue.fetch_job('get_films')
-    if job is None:
-        start_job()
     return render_template('films_list.html')
 
 
 @app.route('/<int:page>')
 def get_films_table(page):
-    job = queue.fetch_job('get_films')
-    if job is None:
-        start_job()
-        return 'Not ready', 202
-    elif job.is_finished:
-        movies_count = 10
-        movies = sort_movies_list(job.result)[:movies_count]
-        movies_page, pages_count = get_page(movies, page)
-        return render_template('films_table.html',
-                               movies=movies_page,
-                               cur_page=page,
-                               pages_count=pages_count)
-    else:
-        return 'Not ready', 202
+    movies_page, pages_count = get_page(page)
+    return render_template('films_table.html',
+                           movies=movies_page,
+                           cur_page=page,
+                           pages_count=pages_count)
 
 
 @app.route('/api')
 def api():
-    job = queue.fetch_job('get_films')
-    if job is None:
-        start_job()
-        return 'Not ready', 202
-    elif job.is_finished:
-        return json.dumps(job.result, indent=4, ensure_ascii=False)
-    else:
-        return 'Not ready', 202
+    return json.dumps(get_movies(), indent=4, ensure_ascii=False)
 
 
 @app.route('/help/api')

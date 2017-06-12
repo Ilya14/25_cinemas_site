@@ -13,7 +13,7 @@
   background-image: linear-gradient(to bottom, #3c3c3c 0, #222 100%);
 }
 
-#before-load {
+.js-before-load {
   position: fixed;
   left: 0;
   top: 0;
@@ -23,7 +23,8 @@
   z-index: 1001;
 }
 
-#before-load i {
+.js-before-load
+.js-loader {
   width: 64px;
   height: 64px;
   position: absolute;

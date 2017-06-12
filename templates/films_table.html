@@ -2,12 +2,12 @@
         {% for movie in movies %}
         <tr>
           {% if movie.film_img %}
-          <td><img class="film-img" src="{{ movie.film_img }}" alt="{{ movie.name }}"></td>
+          <td><img class="film-img" src="{{ movie.film_img }}" alt="{{ movie.movie_title }}"></td>
           {% else %}
-          <td><img class="film-img" src="/static/img/film_140.png" alt="{{ movie.name }}"></td>
+          <td><img class="film-img" src="/static/img/film_140.png" alt="{{ movie.movie_title }}"></td>
           {% endif %}
           <td>
-            <h3><a href="{{ movie.movie_afisha_url }}">{{ movie.name }}</a></h3>
+            <h3><a href="{{ movie.movie_afisha_url }}">{{ movie.movie_title }}</a></h3>
             <h4>
                 <span class="rateit" data-rateit-value="{{ movie.rating }}" data-rateit-ispreset="true" data-rateit-readonly="true" data-rateit-min="0" data-rateit-max="10"></span>
                 {{ movie.rating }} ({{ movie.rating_count }})

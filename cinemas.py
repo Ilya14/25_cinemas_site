@@ -1,8 +1,13 @@
 import requests
 import random
 import logging
-
 from bs4 import BeautifulSoup
+from queue import Queue
+from threading import Thread, Lock, currentThread
+
+lock = Lock()
+queue = Queue()
+kinopoisk_pages = {}
 
 
 def fetch_afisha_page():
@@ -26,11 +31,13 @@ def parse_afisha_list(raw_html, cinemas_limit):
                 'movie_afisha_url': movie_afisha_url,
                 'cinemas_count': cinemas_count
             }
+            queue.put(movie_title)
 
     return afisha_movies_info
 
 
-def fetch_kinopoisk_movie_page(movie_title, proxy_list):
+def fetch_kinopoisk_movie_page(movie_title, proxies_list):
+    logging.info('[%s] Get "%s"...', currentThread().name, movie_title)
     timeout = 3
     kinopoisk_page_url = 'https://www.kinopoisk.ru/index.php'
     params = {
@@ -46,10 +53,10 @@ def fetch_kinopoisk_movie_page(movie_title, proxy_list):
             'Content-Type': 'application/x-www-form-urlencoded',
             'User-Agent': 'Agent:%s'.format(get_random_agent())
         }
-        proxy_ip = get_random_proxy(proxy_list)
+        proxy_ip = get_random_proxy(proxies_list)
         proxy = {'http': proxy_ip}
 
-        logging.info('Try proxy %s...', proxy_ip)
+        logging.info('[%s] Try proxy %s...', currentThread().name, proxy_ip)
 
         try:
             request = requests.Session().get(
@@ -63,11 +70,13 @@ def fetch_kinopoisk_movie_page(movie_title, proxy_list):
                requests.exceptions.ConnectionError,
                requests.exceptions.ProxyError,
                requests.exceptions.ReadTimeout):
-            logging.exception('Connect error. Reconnect...')
+            logging.exception('[%s] Connect error. Reconnect...', currentThread().name)
         else:
             break
 
-    return request.text
+    global kinopoisk_pages
+    with lock:
+        kinopoisk_pages[movie_title] = request.text
 
 
 def get_text(elem):
@@ -91,26 +100,39 @@ def parse_kinopoisk_movie_page(raw_html):
     return kinopoisk_movie_info
 
 
-def get_movies_info(cinemas_limit):
+def worker(proxies_list):
+    while True:
+        movie_title = queue.get()
+        if movie_title is None:
+            break
+        fetch_kinopoisk_movie_page(movie_title, proxies_list)
+        queue.task_done()
+
+
+def get_movies_info(cinemas_limit, threads_count):
     afisha_page = fetch_afisha_page()
     afisha_movies_info = parse_afisha_list(afisha_page, cinemas_limit)
 
     proxies_list = get_proxies_list()
+    for thread_num in range(threads_count):
+        new_thread = Thread(target=worker,
+                            kwargs={'proxies_list': proxies_list},
+                            name='THREAD_{0}'.format(thread_num))
+        new_thread.daemon = True
+        new_thread.start()
+    queue.join()
 
-    movies_count = len(afisha_movies_info.keys())
     movies_info = []
-    for num, movie in enumerate(afisha_movies_info.keys()):
-        logging.info('[%d/%d] Get "%s" page...', num + 1, movies_count, movie)
-        kinopoisk_page = fetch_kinopoisk_movie_page(movie, proxies_list)
-        kinopoisk_movie_info = parse_kinopoisk_movie_page(kinopoisk_page)
+    for movie_title in kinopoisk_pages:
+        kinopoisk_movie_info = parse_kinopoisk_movie_page(kinopoisk_pages[movie_title])
         movies_info.append({
-            'name': movie,
-            'cinemas_count': afisha_movies_info[movie]['cinemas_count'],
-            'movie_afisha_url': afisha_movies_info[movie]['movie_afisha_url'],
+            'movie_title': movie_title,
+            'cinemas_count': afisha_movies_info[movie_title]['cinemas_count'],
+            'movie_afisha_url': afisha_movies_info[movie_title]['movie_afisha_url'],
             'rating': kinopoisk_movie_info['rating'],
             'rating_count': kinopoisk_movie_info['rating_count'],
             'film_synopsys': kinopoisk_movie_info['film_synopsys'],
-            'film_img': kinopoisk_movie_info['film_img'],
+            'film_img': kinopoisk_movie_info['film_img']
         })
 
     return movies_info
