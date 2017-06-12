@@ -90,11 +90,17 @@ def get_text(elem):
 def parse_kinopoisk_movie_page(raw_html):
     soup = BeautifulSoup(raw_html, 'lxml')
 
+    img_box = soup.find('div', {'class': 'film-img-box'})
+    if img_box is not None:
+        img = img_box.find('img')
+        if img is not None:
+            film_img = img.attrs['src']
+
     kinopoisk_movie_info = {
         'rating':  get_text(soup.find('span', {'class': 'rating_ball'})),
         'rating_count': get_text(soup.find('span', {'class': 'ratingCount'})),
         'film_synopsys': get_text(soup.find('div', {'class': 'brand_words film-synopsys'})),
-        'film_img': soup.find('div', {'class': 'film-img-box'}).find('img').attrs['src']
+        'film_img': film_img
     }
 
     return kinopoisk_movie_info
