@@ -95,6 +95,10 @@ def parse_kinopoisk_movie_page(raw_html):
         img = img_box.find('img')
         if img is not None:
             film_img = img.attrs['src']
+        else:
+            film_img = None
+    else:
+        film_img = None
 
     kinopoisk_movie_info = {
         'rating':  get_text(soup.find('span', {'class': 'rating_ball'})),
